@@ -26,7 +26,7 @@ jobs:
           cache: true
 
       - name: Generate Android project structure
-        run: flutter create . --platforms=android
+        run: flutter create . --platforms=android --project-name=magic_beats
 
       - name: Install Dependencies
         run: flutter pub get
