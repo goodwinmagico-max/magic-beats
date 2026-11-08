@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -10,49 +11,153 @@ class MagicBeatsApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Magic Beats',
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        brightness: Brightness.dark,
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF1A1612),
+        primaryColor: Colors.amber,
       ),
-      home: const HomeScreen(),
+      home: const StudioScreen(),
     );
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class StudioScreen extends StatefulWidget {
+  const StudioScreen({super.key});
+
+  @override
+  State<StudioScreen> createState() => _StudioScreenState();
+}
+
+class _StudioScreenState extends State<StudioScreen> {
+  double currentBpm = 130.0;
+  bool isCountingDown = false;
+  bool isRecording = false;
+  int countdownTimer = 3;
+  String statusText = 'Ready to Record...';
+  String currentTrack = 'Magic_Beat_001.wav';
+  Timer? _timer;
+
+  void startRecProcess() {
+    if (isRecording || isCountingDown) return;
+    setState(() {
+      isCountingDown = true;
+      countdownTimer = 3;
+      statusText = 'Get ready... 3';
+    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        countdownTimer--;
+        if (countdownTimer > 0) {
+          statusText = 'Get ready... $countdownTimer';
+        } else {
+          timer.cancel();
+          isCountingDown = false;
+          isRecording = true;
+          statusText = '🔴 Recording Trap Loop (BPM: ${currentBpm.toInt()})...';
+        }
+      });
+    });
+  }
+
+  void stopRec() {
+    _timer?.cancel();
+    setState(() {
+      isCountingDown = false;
+      isRecording = false;
+      statusText = 'Ready to Record...';
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Magic Beats'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.music_note, size: 80, color: Colors.deepPurpleAccent),
-            const SizedBox(height: 20),
-            const Text(
-              'Добро пожаловать в Magic Beats!',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      body: Stack(
+        children: [
+          Image.asset(
+            'studio_background.jpg',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+          Container(color: Colors.black38),
+
+          Padding(
+            padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                const Text(
+                  'MAGIC BEATS',
+                  style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 24, color: Colors.white70),
+                ),
+
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(15)),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(color: Colors.amber.shade900, borderRadius: BorderRadius.circular(20)),
+                        child: Text('${currentBpm.toInt()} BPM', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                      ),
+                      Slider(
+                        value: currentBpm,
+                        min: 100, max: 160,
+                        divisions: 12,
+                        activeColor: Colors.amber,
+                        onChanged: isRecording || isCountingDown ? null : (v) => setState(() => currentBpm = v),
+                      ),
+                    ],
+                  ),
+                ),
+
+                GestureDetector(
+                  onTap: isRecording ? stopRec : startRecProcess,
+                  child: Container(
+                    width: 180, height: 180,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isRecording ? Colors.red : isCountingDown ? Colors.orange : Colors.amber.shade700,
+                      boxShadow: [BoxShadow(color: (isRecording ? Colors.red : Colors.amber).withOpacity(0.5), blurRadius: 20, spreadRadius: 5)],
+                      border: Border.all(color: Colors.white10, width: 3),
+                    ),
+                    child: Center(
+                      child: Text(
+                        isCountingDown ? '$countdownTimer' : isRecording ? 'STOP' : 'REC',
+                        style: TextStyle(fontSize: isCountingDown ? 50 : 32, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
+                  child: Column(
+                    children: [
+                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          const Text('Your Last Beat', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                          Text(currentTrack, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                        ]),
+                        IconButton(icon: const Icon(Icons.share, color: Colors.amber, size: 20,), onPressed: () {}),
+                      ]),
+                    ],
+                  ),
+                ),
+                Text(statusText, style: TextStyle(color: isRecording ? Colors.redAccent : Colors.amber.shade200, fontSize: 12)),
+              ],
             ),
-            const SizedBox(height: 10),
-            const Text(
-              'Студия независимых битов',
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Включить бит'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
