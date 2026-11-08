@@ -29,12 +29,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Clean and Build
+      - name: Generate Android platform files if missing
         run: |
-          rm -rf android/app/.android
-          flutter clean
-          flutter pub get
-          flutter build apk --release
+          if [ ! -d "android" ]; then
+            flutter create . --platforms=android --org com.magicbeats
+          fi
+
+      - name: Build APK Release
+        run: flutter build apk --release --verbose
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
