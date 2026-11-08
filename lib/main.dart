@@ -1,5 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:record/record.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 void main() {
   runApp(const MagicBeatsApp());
@@ -35,17 +40,41 @@ class _StudioScreenState extends State<StudioScreen> {
   bool isRecording = false;
   int countdownTimer = 3;
   String statusText = 'Ready to Record...';
-  String currentTrack = 'Magic_Beat_001.wav';
-  Timer? _timer;
+  String? recordedFilePath;
+  String currentTrack = 'Magic_Beat_001.m4a';
 
-  void startRecProcess() {
+  Timer? _timer;
+  final AudioRecorder _audioRecorder = AudioRecorder();
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _audioRecorder.dispose();
+    super.dispose();
+  }
+
+  // Запуск процесса с трехсекундной задержкой
+  Future<void> startRecProcess() async {
     if (isRecording || isCountingDown) return;
+
+    // Запрашиваем разрешение на доступ к микрофону
+    final status = await Permission.microphone.request();
+    if (status != PermissionStatus.granted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Разрешите доступ к микрофону в настройках!')),
+        );
+      }
+      return;
+    }
+
     setState(() {
       isCountingDown = true;
       countdownTimer = 3;
       statusText = 'Get ready... 3';
     });
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       setState(() {
         countdownTimer--;
         if (countdownTimer > 0) {
@@ -53,26 +82,69 @@ class _StudioScreenState extends State<StudioScreen> {
         } else {
           timer.cancel();
           isCountingDown = false;
-          isRecording = true;
-          statusText = '🔴 Recording Trap Loop (BPM: ${currentBpm.toInt()})...';
+          _startActualRecording();
         }
       });
     });
   }
 
-  void stopRec() {
-    _timer?.cancel();
-    setState(() {
-      isCountingDown = false;
-      isRecording = false;
-      statusText = 'Ready to Record...';
-    });
+  // Запуск реальной записи в файл
+  Future<void> _startActualRecording() async {
+    try {
+      final Directory appDocDir = await getApplicationDocumentsDirectory();
+      final String filePath = '${appDocDir.path}/Magic_Beat_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+      await _audioRecorder.start(
+        const RecordConfig(encoder: AudioEncoder.aacLc),
+        path: filePath,
+      );
+
+      setState(() {
+        isRecording = true;
+        recordedFilePath = filePath;
+        currentTrack = filePath.split('/').last;
+        statusText = '🔴 Recording Live Mic Loop (BPM: ${currentBpm.toInt()})...';
+      });
+    } catch (e) {
+      setState(() {
+        statusText = 'Error starting record';
+      });
+    }
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  // Остановка записи
+  Future<void> stopRec() async {
+    try {
+      final path = await _audioRecorder.stop();
+      setState(() {
+        isRecording = false;
+        recordedFilePath = path;
+        statusText = 'Saved: ${currentTrack}';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Запись сохранена: $currentTrack')),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isRecording = false;
+        statusText = 'Error stopping record';
+      });
+    }
+  }
+
+  // Функция поделиться записанным аудиофайлом
+  void shareBeat() {
+    if (recordedFilePath != null && File(recordedFilePath!).existsSync()) {
+      Share.shareXFiles(
+        [XFile(recordedFilePath!)],
+        text: 'Мой новый бит из Magic Beats! BPM: ${currentBpm.toInt()}',
+      );
+    } else {
+      Share.share('Magic Beats Loop (BPM: ${currentBpm.toInt()}) - Запиши первый бит!');
+    }
   }
 
   @override
@@ -86,21 +158,21 @@ class _StudioScreenState extends State<StudioScreen> {
             width: double.infinity,
             height: double.infinity,
           ),
-          Container(color: Colors.black38),
+          Container(color: Colors.black26),
 
           Padding(
-            padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 20),
+            padding: const EdgeInsets.only(top: 80, left: 20, right: 20, bottom: 20),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'MAGIC BEATS',
-                  style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 24, color: Colors.white70),
-                ),
-
+                // Блок BPM
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(15)),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                  ),
                   child: Column(
                     children: [
                       Container(
@@ -119,6 +191,7 @@ class _StudioScreenState extends State<StudioScreen> {
                   ),
                 ),
 
+                // Кнопка REC / STOP
                 GestureDetector(
                   onTap: isRecording ? stopRec : startRecProcess,
                   child: Container(
@@ -127,7 +200,7 @@ class _StudioScreenState extends State<StudioScreen> {
                       shape: BoxShape.circle,
                       color: isRecording ? Colors.red : isCountingDown ? Colors.orange : Colors.amber.shade700,
                       boxShadow: [BoxShadow(color: (isRecording ? Colors.red : Colors.amber).withOpacity(0.5), blurRadius: 20, spreadRadius: 5)],
-                      border: Border.all(color: Colors.white10, width: 3),
+                      border: Border.all(color: Colors.white24, width: 3),
                     ),
                     child: Center(
                       child: Text(
@@ -138,22 +211,46 @@ class _StudioScreenState extends State<StudioScreen> {
                   ),
                 ),
 
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
-                  child: Column(
-                    children: [
-                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          const Text('Your Last Beat', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                          Text(currentTrack, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                        ]),
-                        IconButton(icon: const Icon(Icons.share, color: Colors.amber, size: 20,), onPressed: () {}),
-                      ]),
-                    ],
+                // Панель файла
+                GestureDetector(
+                  onTap: shareBeat,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Your Recording (Tap to Share)', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                              const SizedBox(height: 2),
+                              Text(
+                                currentTrack,
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.share, color: Colors.amber, size: 22),
+                          onPressed: shareBeat,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                Text(statusText, style: TextStyle(color: isRecording ? Colors.redAccent : Colors.amber.shade200, fontSize: 12)),
+
+                Text(
+                  statusText,
+                  style: TextStyle(color: isRecording ? Colors.redAccent : Colors.amber.shade200, fontSize: 13, fontStyle: FontStyle.italic),
+                ),
               ],
             ),
           ),
