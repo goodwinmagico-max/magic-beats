@@ -53,16 +53,14 @@ class _StudioScreenState extends State<StudioScreen> {
     super.dispose();
   }
 
-  // Запуск процесса с трехсекундной задержкой
   Future<void> startRecProcess() async {
     if (isRecording || isCountingDown) return;
 
-    // Запрашиваем разрешение на доступ к микрофону
     final status = await Permission.microphone.request();
     if (status != PermissionStatus.granted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Разрешите доступ к микрофону в настройках!')),
+          const SnackBar(content: Text('Разрешите доступ к микрофону!')),
         );
       }
       return;
@@ -88,7 +86,6 @@ class _StudioScreenState extends State<StudioScreen> {
     });
   }
 
-  // Запуск реальной записи в файл
   Future<void> _startActualRecording() async {
     try {
       final Directory appDocDir = await getApplicationDocumentsDirectory();
@@ -103,7 +100,7 @@ class _StudioScreenState extends State<StudioScreen> {
         isRecording = true;
         recordedFilePath = filePath;
         currentTrack = filePath.split('/').last;
-        statusText = '🔴 Recording Live Mic Loop (BPM: ${currentBpm.toInt()})...';
+        statusText = '🔴 Recording Trap Loop (BPM: ${currentBpm.toInt()})...';
       });
     } catch (e) {
       setState(() {
@@ -112,14 +109,13 @@ class _StudioScreenState extends State<StudioScreen> {
     }
   }
 
-  // Остановка записи
   Future<void> stopRec() async {
     try {
       final path = await _audioRecorder.stop();
       setState(() {
         isRecording = false;
         recordedFilePath = path;
-        statusText = 'Saved: ${currentTrack}';
+        statusText = 'Saved: $currentTrack';
       });
 
       if (mounted) {
@@ -135,7 +131,6 @@ class _StudioScreenState extends State<StudioScreen> {
     }
   }
 
-  // Функция поделиться записанным аудиофайлом
   void shareBeat() {
     if (recordedFilePath != null && File(recordedFilePath!).existsSync()) {
       Share.shareXFiles(
@@ -143,7 +138,7 @@ class _StudioScreenState extends State<StudioScreen> {
         text: 'Мой новый бит из Magic Beats! BPM: ${currentBpm.toInt()}',
       );
     } else {
-      Share.share('Magic Beats Loop (BPM: ${currentBpm.toInt()}) - Запиши первый бит!');
+      Share.share('Magic Beats Loop (BPM: ${currentBpm.toInt()})');
     }
   }
 
@@ -165,7 +160,6 @@ class _StudioScreenState extends State<StudioScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Блок BPM
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -191,7 +185,6 @@ class _StudioScreenState extends State<StudioScreen> {
                   ),
                 ),
 
-                // Кнопка REC / STOP
                 GestureDetector(
                   onTap: isRecording ? stopRec : startRecProcess,
                   child: Container(
@@ -211,7 +204,6 @@ class _StudioScreenState extends State<StudioScreen> {
                   ),
                 ),
 
-                // Панель файла
                 GestureDetector(
                   onTap: shareBeat,
                   child: Container(
