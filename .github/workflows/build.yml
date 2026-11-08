@@ -37,7 +37,7 @@ jobs:
           rm -rf temp_app
 
       - name: Build APK Release
-        run: flutter build apk --release --verbose --stacktrace
+        run: flutter build apk --release --verbose -- --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
