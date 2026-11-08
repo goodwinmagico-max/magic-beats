@@ -29,10 +29,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Recreate Android platform files cleanly
+      - name: Generate clean Android files
         run: |
           rm -rf android
-          flutter create . --platforms=android --org com.magicbeats
+          flutter create temp_app --platforms=android --org com.magicbeats
+          mv temp_app/android ./android
+          rm -rf temp_app
 
       - name: Build APK Release
         run: flutter build apk --release --verbose
