@@ -29,12 +29,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Fix Android Gradle wrapper
+      - name: Clean and Build
         run: |
-          flutter create . --platforms=android --org com.magicbeats.app || true
-
-      - name: Build APK Release
-        run: flutter build apk --release
+          rm -rf android/app/.android
+          flutter clean
+          flutter pub get
+          flutter build apk --release
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
