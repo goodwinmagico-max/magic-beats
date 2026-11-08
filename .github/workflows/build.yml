@@ -32,7 +32,10 @@ jobs:
       - name: Recreate Android platform cleanly
         run: |
           rm -rf android
-          flutter create . --platforms=android --org com.magicbeats
+          # Создаем файлы во временной папке с правильным именем, а потом переносим в корень
+          flutter create temp_app --platforms=android --org com.magicbeats
+          cp -r temp_app/android ./android
+          rm -rf temp_app
 
       - name: Build APK Release
         run: flutter build apk --release --verbose
