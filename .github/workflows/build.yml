@@ -1,4 +1,4 @@
-name: Build Magic Beats APK
+name: Build APK
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -25,13 +25,10 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate Android project structure
-        run: flutter create . --platforms=android --project-name=magic_beats
-
-      - name: Install Dependencies
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK
+      - name: Build Release APK
         run: flutter build apk --release
 
       - name: Upload APK
