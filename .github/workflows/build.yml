@@ -29,6 +29,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Fix Android Gradle wrapper
+        run: |
+          flutter create . --platforms=android --org com.magicbeats.app || true
+
       - name: Build APK Release
         run: flutter build apk --release
 
