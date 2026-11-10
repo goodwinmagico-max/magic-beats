@@ -46,15 +46,17 @@ jobs:
           echo "android.suppressUnsupportedCompileSdk=34" >> android/gradle.properties
           echo "android.defaultConfig.vectorDrawables.useSupportLibrary=true" >> android/gradle.properties
 
-          # 4. Принудительно выравниваем версии Kotlin для всех модулей, исключая дубликаты классов
-          echo "" >> android/app/build.gradle
-          echo "configurations.all {" >> android/app/build.gradle
-          echo "    resolutionStrategy.eachDependency {" >> android/app/build.gradle
-          echo "        if (details.requested.group == 'org.jetbrains.kotlin') {" >> android/app/build.gradle
-          echo "            details.useVersion '1.8.22'" >> android/app/build.gradle
-          echo "        }" >> android/app/build.gradle
-          echo "    }" >> android/app/build.gradle
-          echo "}" >> android/app/build.gradle
+          # 4. Принудительно выравниваем версии Kotlin во всех подмодулях корневого проекта
+          echo "
+          subprojects {
+              project.configurations.all {
+                  resolutionStrategy.eachDependency { org.gradle.api.artifacts.DependencyResolveDetails details ->
+                      if (details.requested.group == 'org.jetbrains.kotlin') {
+                          details.useVersion '1.8.22'
+                      }
+                  }
+              }
+          }" >> android/build.gradle
 
       - name: Build APK Release
         run: flutter build apk --release --track-widget-creation
