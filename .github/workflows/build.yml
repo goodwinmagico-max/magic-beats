@@ -39,24 +39,12 @@ jobs:
           # 1. Устанавливаем minSdkVersion 23
           sed -i 's/minSdkVersion.*/minSdkVersion 23/g' android/app/build.gradle
           
-          # 2. Обновляем версию Kotlin в корневом build.gradle до 1.8.22
-          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.8.22'/g" android/build.gradle
+          # 2. Обновляем версию Kotlin в android/settings.gradle до 1.8.22
+          sed -i 's/version "1\.[0-9]\.[0-9]*"/version "1.8.22"/g' android/settings.gradle || true
           
           # 3. Отключаем строгие предупреждения SDK
           echo "android.suppressUnsupportedCompileSdk=34" >> android/gradle.properties
           echo "android.defaultConfig.vectorDrawables.useSupportLibrary=true" >> android/gradle.properties
-
-          # 4. Принудительно выравниваем версии Kotlin во всех подмодулях корневого проекта
-          echo "
-          subprojects {
-              project.configurations.all {
-                  resolutionStrategy.eachDependency { org.gradle.api.artifacts.DependencyResolveDetails details ->
-                      if (details.requested.group == 'org.jetbrains.kotlin') {
-                          details.useVersion '1.8.22'
-                      }
-                  }
-              }
-          }" >> android/build.gradle
 
       - name: Build APK Release
         run: flutter build apk --release --track-widget-creation
