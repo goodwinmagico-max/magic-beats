@@ -31,7 +31,7 @@ jobs:
 
       - name: Recreate clean Android platform and update Kotlin
         run: |
-          # 1. Создаем чистую, поддерживаемую структуру Android
+          # 1. Создаем чистую структуру Android
           rm -rf android
           flutter create temp_app --platforms=android --org com.magicbeats
           cp -r temp_app/android ./android
@@ -40,8 +40,8 @@ jobs:
           # 2. Устанавливаем minSdkVersion 23
           sed -i 's/minSdkVersion.*/minSdkVersion 23/g' android/app/build.gradle
           
-          # 3. Аккуратно обновляем версию Kotlin в android/settings.gradle на 1.8.22
-          sed -i 's/org.jetbrains.kotlin.android" version "[^"]*"/org.jetbrains.kotlin.android" version "1.8.22"/g' android/settings.gradle
+          # 3. Точно обновляем версию Kotlin в android/build.gradle
+          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.8.22'/g" android/build.gradle
           
           # 4. Отключаем строгие предупреждения SDK
           echo "android.suppressUnsupportedCompileSdk=34" >> android/gradle.properties
