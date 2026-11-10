@@ -29,26 +29,22 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Recreate clean Android platform and apply fixes
+      - name: Fix Android Configuration and Kotlin Version
         run: |
-          rm -rf android
-          flutter create temp_app --platforms=android --org com.magicbeats
-          cp -r temp_app/android ./android
-          rm -rf temp_app
-          
-          # 1. Устанавливаем minSdkVersion 23 и compileSdkVersion 34
+          # 1. Устанавливаем minSdkVersion 23 и compileSdkVersion 34 в существующем проекте
           sed -i 's/minSdkVersion.*/minSdkVersion 23/g' android/app/build.gradle
           sed -i 's/compileSdkVersion.*/compileSdkVersion 34/g' android/app/build.gradle || true
           
-          # 2. Обновляем версию Kotlin в android/build.gradle
-          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.8.22'/g" android/build.gradle
+          # 2. Гарантированно обновляем версию Kotlin до 1.8.22 во всех файлах gradle
+          find android -type f -name "*.gradle" -exec sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.8.22'/g" {} +
+          find android -type f -name "*.gradle" -exec sed -i 's/org.jetbrains.kotlin.android" version "[^"]*"/org.jetbrains.kotlin.android" version "1.8.22"/g' {} +
           
-          # 3. Отключаем строгие проверки SDK
+          # 3. Отключаем строгие проверки SDK в gradle.properties
           echo "android.suppressUnsupportedCompileSdk=34" >> android/gradle.properties
           echo "android.defaultConfig.vectorDrawables.useSupportLibrary=true" >> android/gradle.properties
 
-      - name: Build APK Release with Verbose Logs
-        run: flutter build apk --release --verbose
+      - name: Build APK Release
+        run: flutter build apk --release --track-widget-creation
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
