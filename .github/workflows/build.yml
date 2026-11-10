@@ -29,26 +29,26 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Recreate clean Android platform and update Kotlin
+      - name: Recreate clean Android platform and apply fixes
         run: |
-          # 1. Создаем чистую структуру Android
           rm -rf android
           flutter create temp_app --platforms=android --org com.magicbeats
           cp -r temp_app/android ./android
           rm -rf temp_app
           
-          # 2. Устанавливаем minSdkVersion 23
+          # 1. Устанавливаем minSdkVersion 23 и compileSdkVersion 34
           sed -i 's/minSdkVersion.*/minSdkVersion 23/g' android/app/build.gradle
+          sed -i 's/compileSdkVersion.*/compileSdkVersion 34/g' android/app/build.gradle || true
           
-          # 3. Точно обновляем версию Kotlin в android/build.gradle
+          # 2. Обновляем версию Kotlin в android/build.gradle
           sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.8.22'/g" android/build.gradle
           
-          # 4. Отключаем строгие предупреждения SDK
+          # 3. Отключаем строгие проверки SDK
           echo "android.suppressUnsupportedCompileSdk=34" >> android/gradle.properties
           echo "android.defaultConfig.vectorDrawables.useSupportLibrary=true" >> android/gradle.properties
 
-      - name: Build APK Release
-        run: flutter build apk --release --track-widget-creation
+      - name: Build APK Release with Verbose Logs
+        run: flutter build apk --release --verbose
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
