@@ -29,15 +29,19 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Recreate Android platform cleanly and fix minSdk
+      - name: Recreate Android platform cleanly and fix config
         run: |
           rm -rf android
           flutter create temp_app --platforms=android --org com.magicbeats
           cp -r temp_app/android ./android
           rm -rf temp_app
           
-          # Автоматически меняем minSdkVersion с 19 (или другой) на 23 в build.gradle
+          # Меняем minSdkVersion на 23
           sed -i 's/minSdkVersion.*/minSdkVersion 23/g' android/app/build.gradle
+          
+          # Отключаем строгую проверку метаданных AAR, чтобы избежать конфликтов версий плагинов
+          echo "android.suppressUnsupportedCompileSdk=34" >> android/gradle.properties
+          echo "android.defaultConfig.vectorDrawables.useSupportLibrary=true" >> android/gradle.properties
 
       - name: Build APK Release
         run: flutter build apk --release --track-widget-creation
