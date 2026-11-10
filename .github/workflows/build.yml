@@ -43,9 +43,10 @@ jobs:
           # 4. Проставляем Kotlin 1.8.22
           sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.8.22'/g" android/build.gradle || true
           
-          # 5. Отключаем строгие проверки SDK
+          # 5. Отключаем строгие проверки SDK и прописываем путь к Java для Gradle
           echo "android.suppressUnsupportedCompileSdk=34" >> android/gradle.properties
           echo "android.defaultConfig.vectorDrawables.useSupportLibrary=true" >> android/gradle.properties
+          echo "org.gradle.java.home=$JAVA_HOME" >> android/gradle.properties
 
       - name: Build APK Release
         run: flutter build apk --release --track-widget-creation
