@@ -29,17 +29,18 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Recreate Android platform cleanly
+      - name: Recreate Android platform cleanly and fix minSdk
         run: |
           rm -rf android
           flutter create temp_app --platforms=android --org com.magicbeats
           cp -r temp_app/android ./android
           rm -rf temp_app
+          
+          # Автоматически меняем minSdkVersion с 19 (или другой) на 23 в build.gradle
+          sed -i 's/minSdkVersion.*/minSdkVersion 23/g' android/app/build.gradle
 
       - name: Build APK Release
         run: flutter build apk --release --track-widget-creation
-        env:
-          GRADLE_OPTS: "-Dorg.gradle.info=true"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
