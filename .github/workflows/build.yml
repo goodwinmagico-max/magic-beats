@@ -29,21 +29,20 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Regenerate clean Android platform and fix Kotlin
+      - name: Upgrade Android Project Gradle & Kotlin
         run: |
-          # 1. Полностью сносим старую несовместимую папку android
-          rm -rf android
+          # Обновляем gradle-wrapper до современной версии 8.4, которая требуется Flutter 3.19+
+          sed -i 's/distributionUrl=.*\/gradle-.*-all.zip/distributionUrl=https\:\/\/services.gradle.org\/distributions\/gradle-8.4-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
           
-          # 2. Создаем свежий поддерживаемый проект-шаблон под Android
-          flutter create . --platforms=android --org com.magicbeats
-          
-          # 3. Настраиваем minSdkVersion 23
+          # Устанавливаем minSdkVersion 23 и compileSdkVersion 34
           sed -i 's/minSdkVersion.*/minSdkVersion 23/g' android/app/build.gradle
+          sed -i 's/compileSdkVersion.*/compileSdkVersion 34/g' android/app/build.gradle || true
           
-          # 4. Устанавливаем актуальную версию Kotlin 1.8.22 в корневой build.gradle
-          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.8.22'/g" android/build.gradle || true
+          # Задаем Kotlin версии 1.8.22 везде
+          find android -type f -name "*.gradle" -exec sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.8.22'/g" {} +
+          find android -type f -name "*.gradle" -exec sed -i 's/org.jetbrains.kotlin.android" version "[^"]*"/org.jetbrains.kotlin.android" version "1.8.22"/g' {} +
           
-          # 5. Отключаем строгие проверки SDK
+          # Добавляем подавление предупреждений SDK
           echo "android.suppressUnsupportedCompileSdk=34" >> android/gradle.properties
           echo "android.defaultConfig.vectorDrawables.useSupportLibrary=true" >> android/gradle.properties
 
