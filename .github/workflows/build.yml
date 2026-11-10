@@ -29,18 +29,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Recreate Android platform and apply precise fixes
+      - name: Apply build configuration fixes
         run: |
-          rm -rf android
-          flutter create temp_app --platforms=android --org com.magicbeats
-          cp -r temp_app/android ./android
-          rm -rf temp_app
-          
-          # 1. Устанавливаем minSdkVersion 23
+          # 1. Устанавливаем minSdkVersion 23 в app/build.gradle
           sed -i 's/minSdkVersion.*/minSdkVersion 23/g' android/app/build.gradle
           
-          # 2. Точечно обновляем версию Kotlin прямо в блоке плагинов settings.gradle
-          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.8.22"/g' android/settings.gradle
+          # 2. Обновляем версию Kotlin везде, где она встречается в android/
+          find android -type f \( -name "build.gradle" -o -name "settings.gradle" \) -exec sed -i 's/1\.7\.[0-9]*/1.8.22/g' {} +
+          find android -type f \( -name "build.gradle" -o -name "settings.gradle" \) -exec sed -i 's/1\.8\.10/1.8.22/g' {} +
+          find android -type f \( -name "build.gradle" -o -name "settings.gradle" \) -exec sed -i 's/kotlin_version = .*/kotlin_version = "1.8.22"/g' {} +
           
           # 3. Отключаем строгие предупреждения SDK
           echo "android.suppressUnsupportedCompileSdk=34" >> android/gradle.properties
